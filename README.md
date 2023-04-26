@@ -1,1 +1,1 @@
-# epsilon
+# Epsilon - Python chat-bot
