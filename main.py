@@ -1,5 +1,4 @@
 import random, config, sys, os, wikipedia
-
 from bs4 import BeautifulSoup as bs
 from datetime import datetime as dt
 import requests as r
@@ -10,15 +9,24 @@ from phonenumbers import parse, geocoder, timezone, carrier
 from phonenumbers.phonenumberutil import NumberParseException
 from aiogram.dispatcher import Dispatcher
 from aiogram.utils import executor
+import mark as btn
+# from transliterate import translit
+from googletrans import Translator
+
 
 bot = Bot(config.token)
 dp = Dispatcher(bot)
+translator = Translator()
+
 
 # Bot variables
 emojies =['⭐', '❤️', '🔥', '✨', '👨‍💻', '👨‍🔧']
 errors = ['Я не понял! Напиши что-то менее остроумное.', "Моя твоя не понимать! Пиши понятнее.", "Ошибка: БотСлишкомТупойЧтобыЭтоПонять!", "Ничего не понимаю!", "Сорри", "май брейн ис туу смол ту андерстенд тхис!"]
 greeting = ["Доброе утро", "Добрый день", "Добрый вечер", "Доброй ночи"]
+weather_cmds = ["погода", "температура"]
 jokes_list_start_num = 0
+version = "0.0.4"
+build = "Альфа"
 
 # User commands
 user_greet = ['Привет', "Доброе утро", "Добрый день", "Добрый вечер", "Доброй ночи", "Аве", "Салам", "Привет", "Хауди", "Хеллоу"]
@@ -58,9 +66,9 @@ async def start_cmd(message: types.Message):
 
 # Bot chat-commands
 
-@dp.message_handler()
+@dp.message_handler(content_types=['text'])
 async def all_textes(message: types.Message):
-    global errors, last_jokes, jokes_list_start_num, greeting, emojies
+    global errors, last_jokes, jokes_list_start_num, greeting, emojies, version
     name = message.from_user.first_name
 
     if fuzz.partial_ratio(message.text, jokes_cmds) > 65:
@@ -70,7 +78,7 @@ async def all_textes(message: types.Message):
         await bot.send_message(message.from_user.id, text=soup.select(".text")[jokes_list_start_num].text)
         jokes_list_start_num += 1
     elif fuzz.ratio(message.text, 'О боте') > 65:
-        await message.answer('<i>Project Epsilon (ε)</i>\nВерсия: <i>0.0.3</i>\nСборка: <i>Альфа</i>\nРазработчики: <i>@notCloffer, @DimaEmelianov90</i>', parse_mode="HTML")
+        await message.answer(f'<i>Project Epsilon (ε)</i>\nВерсия: <i>{version}</i>\nСборка: <i>{build}</i>\nРазработчики: <i>@notCloffer, @DimaEmelianov90</i>', parse_mode="HTML")
     elif fuzz.ratio(message.text, user_greet) > 65:
         if 4 <= dt.now().hour <= 12:
             if int(message.from_user.id) != int("1618502708") and int(message.from_user.id) != int("940369449"):
@@ -118,62 +126,31 @@ async def all_textes(message: types.Message):
         title = wikipedia.page(wiki).title
         page = wikipedia.summary(wiki)
         await message.reply(f"<strong><i>{title}</i></strong>\n\n{page}", parse_mode='HTML')
+    elif fuzz.ratio(message.text, weather_cmds) > 65:
+        await message.reply("Напиши название города", reply_markup=btn.WeatherMenu)
     else:
         await bot.send_message(message.from_user.id, text=random.choice(errors))
 
+@dp.message_handler(content_types=["location"])
+async def location(message):
+    if message.location is not None:
+        global translator
+        # print(message.location)
+        w = r.get(f"https://api.openweathermap.org/data/2.5/weather?lat={message.location.latitude}&lon={message.location.longitude}&appid={config.api_code}")
 
+        req = w.json()
+        # print(req)
 
-# hellower = ["Аве", ""Салам", ""Привет", ""Хауди", ""Какие люди? Это же", ""Хеллоу"]
-#
-# if config.greetingsD is not True:
-#     print(random.choice(hellower) + ", "" + {name} + "!")
-# else:
-#     if dt.now().hour >= 4 and dt.now().hour <= 12:
-#         print(greeting[0] + ", "" + {name} + "!")
-#     elif dt.now().hour >= 12 and dt.now().hour <= 16:
-#         print(greeting[1] + ", "" + {name} + "!")
-#     elif dt.now().hour >= 16 and dt.now().hour <= 24:
-#         print(greeting[2] + ", "" + {name} + "!")
-#     elif dt.now().hour >= 24 or dt.now().hour <= 4:
-#         print(greeting[3] + ", "" + {name} + "!")
+        city = req["name"]
+        temp = req["main"]['temp'] 
+        humidity = req["main"]["humidity"]
+        pressure = req["main"]["pressure"]
+        wind = req["wind"]["speed"]
+        result = translator.translate(city, dest='ru').text
+        deletter = types.ReplyKeyboardRemove()
+        await message.reply(
+            f"В городе: {result}\nТемпература: {round(temp-273.15)} C°\nВлажность: {humidity} % \nДавление: {pressure} мм.рт.ст\nВетер: {wind} м/с", reply_markup=deletter)
 
-# def settings():
-#     print("Ник:", "{name})
-#     if config.greetingsD is True:
-#         print("Стиль приветствия: Деловой")
-#     else:
-#         print("Стиль приветствия: Разговорный")
-#
-#     while True:
-#         change = input("Желаете ли вы что-нибудь изменить?\n> ")
-#         if change == "Нет":
-#             break
-#         elif change == "Да":
-#             while True:
-#                 ch = input("Что вы хотите изменить?\n> ")
-#                 if ch == "Ник":
-#                     setting.setname()
-#                     break
-#                 elif ch == "Стиль приветствия":
-#                     setting.setgreeting()
-#                     break
-#         else:
-#             print("Я вас не понял. Здесь нужно написать Да или Нет.")
-#
-# def now_track():
-#     client = Client("AQAAAAAiZU9XAAG8Xh_RpJGGeEgykU-j-pwEGWk").init()
-#
-#     queues = client.queues_list()
-#     last_queue = client.queue(queues[0].id)
-#
-#     last_track_id = last_queue.get_current_track()
-#     last_track = last_track_id.fetch_track()
-#
-#     artists = ', "'.join(last_track.artists_name())
-#     title = last_track.title
-#     fsec = last_track.duration_ms // 1000 % 60
-#     print('Сейчас играет: {artists} - {title}')
-#     print("Длина трека: " + str(last_track.duration_ms // 60000) + ":" + str(int(fsec//10)) + str(int(fsec%10)))
 
 if __name__ == '__main__':
     executor.start_polling(dp)
