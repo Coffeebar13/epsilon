@@ -1,126 +1,156 @@
-import os, rich, sys, time
-from random import choice
+import random, config, sys, os, wikipedia
 from bs4 import BeautifulSoup as bs
 from datetime import datetime as dt
 import requests as r
-from rich.progress import Progress
+from yandex_music import Client
+from fuzzywuzzy import fuzz, process
+from aiogram import Bot, types
+from phonenumbers import parse, geocoder, timezone, carrier
+from phonenumbers.phonenumberutil import NumberParseException
+from aiogram.dispatcher import Dispatcher
+from aiogram.utils import executor
+import mark as btn
+# from transliterate import translit
+from googletrans import Translator
 
-def first_settings():
-    cfg = open("config.py", "a+")
-    name = input("Как вы хотели чтобы вас назвали?\n> ")
-    fin = open("config.py", "rt", encoding="utf8")
-    data = fin.read()
-    data = data.replace(config.name, name)
-    fin.close()
-    fin = open("config.py", "wt", encoding="utf8")
-    fin.write(data)
-    fin.close()
-    while True:
-        greeting = input("Какой вы хотите выбрать стиль приветствия? Деловой или Разгоровный?\n> ")
-        if greeting == "Деловой":
-            cfg.write("\ngreetingsD = True")
-            break
-        elif greeting == "Разговорный":
-            cfg.write("\ngreetingsD = False")
-            break
-        else:
-            print("Я не понял")
-    clr = input("Какой цвет использовать для ника для приветствия? ")
 
-def gen_plugin_c():
-    cfg = open("config.py", "a+")
-    cfg.write("name = 'A'")
-    cfg.write("\ngreetingsD = True")
-    cfg.close()
+bot = Bot(config.token)
+dp = Dispatcher(bot)
+translator = Translator()
 
-def gen_plugin_s():
-    set = open("setting.py", "a+", encoding="utf-8")
-    set.write("import config\n\n")
-    set.write("def setname():\n")
-    set.write('    name = input("Как вы хотели чтобы вас назвали?\ n> ")\n    fin = open("config.py","rt", encoding="utf8")\n    data = fin.read()\n    data = data.replace(config.name, name)\n    fin.close()\n    fin = open("config.py", "wt", encoding="utf8")\n    fin.write(data)\n    fin.close()')
-    set.write("\ndef setgreeting():")
-    set.write('\n    while True:\n        greeting = input("Какой вы хотите выбрать стиль приветствия? Деловой или Разгоровный?\ n> ")\n        if greeting == "Деловой":\n            fin = open("config.py", "rt", encoding="utf8")\n            data = fin.read()\n            data = data.replace("greetingsD = False", "greetingsD = True")\n            fin.close()\n            fin = open("config.py", "wt", encoding="utf8")\n            fin.write(data)\n            fin.close()\n            break\n        elif greeting == "Разговорный":\n           fin = open("config.py", "rt", encoding="utf8")\n           data = fin.read()\n           data = data.replace("greetingsD = True", "greetingsD = False")\n           fin.close()\n           fin = open("config.py", "wt", encoding="utf8")\n           fin.write(data)\n           fin.close()\n           break\n        else:\n           print("Я не понял")')
-    set.close()
 
-if os.path.exists('config.py') == False:
-     gen_plugin_c()
-     with Progress() as progress:
-         t_gen_C = progress.add_task("[bold green]Генерирую конфиг...", total=100)
-         while not progress.finished:
-             progress.update(t_gen_C, advance=0.5)
-             time.sleep(0.02)
-     import config
-else:
-    import config
-    pass
-
-if os.path.exists('setting.py') == False:
-     gen_plugin_s()
-     with Progress() as progress:
-         t_gen_S = progress.add_task("[bold green]Генерирую настройки...", total=100)
-
-         while not progress.finished:
-             progress.update(t_gen_S, advance=0.3)
-             time.sleep(0.02)
-     import setting
-else:
-    import setting
-    pass
-
-if config.name == "A" and config.greetingsD == True:
-    first_settings()
-    print("[bold pink]Перезапусти меня! ^-^[/bold pink]")
-    python = sys.executable
-    os.execl(python, python, *sys.argv)
-
+# Bot variables
+emojies =['⭐', '❤️', '🔥', '✨', '👨‍💻', '👨‍🔧']
+errors = ['Я не понял! Напиши что-то менее остроумное.', "Моя твоя не понимать! Пиши понятнее.", "Ошибка: БотСлишкомТупойЧтобыЭтоПонять!", "Ничего не понимаю!", "Сорри", "май брейн ис туу смол ту андерстенд тхис!"]
 greeting = ["Доброе утро", "Добрый день", "Добрый вечер", "Доброй ночи"]
-hellower = ["Аве", "Салам", "Привет", "Хауди", "Какие люди? Это же", "Хеллоу"]
+weather_cmds = ["погода", "температура"]
+jokes_list_start_num = 0
+version = "0.0.4"
+build = "Альфа"
 
-if config.greetingsD != True:
-    print(choice(hellower) + ", " + config.name + "!")
-else:
-    if dt.now().hour >= 4 and dt.now().hour <= 12:
-        print(greeting[0] + ", " + config.name + "!")
-    elif dt.now().hour >= 12 and dt.now().hour <= 16:
-        print(greeting[1] + ", " + config.name + "!")
-    elif dt.now().hour >= 16 and dt.now().hour <= 0:
-        print(greeting[2] + ", " + config.name + "!")
-    elif dt.now().hour >= 0 or dt.now().hour <= 4:
-        print(greeting[3] + ", " + config.name + "!")
+# User commands
+user_greet = ['Привет', "Доброе утро", "Добрый день", "Добрый вечер", "Доброй ночи", "Аве", "Салам", "Привет", "Хауди", "Хеллоу"]
+jokes_cmds = ["Анекдот", "Шутка", "Прикол"]
+all_cmds = [*jokes_cmds, *user_greet, "О боте", "Настройки", "кубик"]
 
-def jokes():
-    url = 'https://www.anekdot.ru/release/anekdot/day/'
-    html = r.get(url)
-    soup = bs(html.text, 'html.parser')
-    txt = soup.find(class_="text")
-    print(txt.get_text())
-
-def settings():
-    print("Ник:", config.name)
-    if config.greetingsD == True:
-        print("Стиль приветствия: Деловой")
-    else:
-        print("Стиль приветствия: Разговорный")
-
-    while True:
-        change = input("Желаете ли вы что-нибудь изменить?\n> ")
-        if change == "Нет":
-            break
-        elif change == "Да":
-            while True:
-                ch = input("Что вы хотите изменить?\n> ")
-                if ch == "Ник":
-                    setting.setname()
-                    break
-                elif ch == "Стиль приветствия":
-                    setting.setgreeting()
-                    break
+# Bot commands
+@dp.message_handler(commands=['start'])
+async def start_cmd(message: types.Message):
+    global emojies
+    name = message.from_user.first_name
+    #await bot.send_message(message.from_user.id, "text=message.from_user.id)
+    if 4 <= dt.now().hour <= 12:
+        if int(message.from_user.id) != int("1618502708") and int(message.from_user.id) != int("940369449"):
+            await bot.send_message(message.from_user.id, text=f"{greeting[0]}, {name}!")
         else:
-            print("Я вас не понял. Здесь нужно написать Да или Нет.")
+            await bot.send_message(message.from_user.id, text=f"{greeting[0]}, {name}! " + random.choice(emojies))
+    elif 12 <= dt.now().hour <= 16:
+        if int(message.from_user.id) != int("1618502708") and int(message.from_user.id) != int("940369449"):
+            await bot.send_message(message.from_user.id,text=f"{greeting[1]}, {name}!")
+        else:
+            await bot.send_message(message.from_user.id, text=f"{greeting[1]}, {name}! " + random.choice(emojies))
+    elif 16 <= dt.now().hour <= 24:
+        if int(message.from_user.id) != int("1618502708") and int(message.from_user.id) != int("940369449"):
+            await bot.send_message(message.from_user.id, text=f"{greeting[2]}, {name}!")
+        else:
+            await bot.send_message(message.from_user.id, text=f"{greeting[2]}, {name}! " + random.choice(emojies))
+    elif dt.now().hour >= 24 or dt.now().hour <= 4:
+        if int(message.from_user.id) != int("1618502708") and int(message.from_user.id) != int("940369449"):
+            await bot.send_message(message.from_user.id, text=f"{greeting[3]}, {name}!")
+        else:
+            await bot.send_message(message.from_user.id, text=f"{greeting[3]}, {name}! " + random.choice(emojies))
+    # if int(message.from_user.id) != int("1618502708") and int(message.from_user.id) != int("940369449"):
+    #     await bot.send_message(message.from_user.id, "text=f"{greeting[3]}, "{name}!")
+    # else:
+    #     await bot.send_message(message.from_user.id, "text=f"{greeting[3]}, "{name}!" + random.choice(emojies))
 
-while True:
-    qw = input("> ")
-    if qw == "Анекдот":
-        jokes()
-    elif qw == "Настройки":
-        settings()
+# Bot chat-commands
+
+@dp.message_handler(content_types=['text'])
+async def all_textes(message: types.Message):
+    global errors, last_jokes, jokes_list_start_num, greeting, emojies, version
+    name = message.from_user.first_name
+
+    if fuzz.partial_ratio(message.text, jokes_cmds) > 65:
+        url = 'https://www.anekdot.ru/release/anekdot/day/'
+        html = r.get(url)
+        soup = bs(html.text, 'html.parser')
+        await bot.send_message(message.from_user.id, text=soup.select(".text")[jokes_list_start_num].text)
+        jokes_list_start_num += 1
+    elif fuzz.ratio(message.text, 'О боте') > 65:
+        await message.answer(f'<i>Project Epsilon (ε)</i>\nВерсия: <i>{version}</i>\nСборка: <i>{build}</i>\nРазработчики: <i>@notCloffer, @DimaEmelianov90</i>', parse_mode="HTML")
+    elif fuzz.ratio(message.text, user_greet) > 65:
+        if 4 <= dt.now().hour <= 12:
+            if int(message.from_user.id) != int("1618502708") and int(message.from_user.id) != int("940369449"):
+                await message.reply(f"{greeting[0]}, {name}!")
+            else:
+                await bot.send_message(message.from_user.id, text=f"{greeting[0]}, {name}! " + random.choice(emojies))
+        elif 12 <= dt.now().hour <= 16:
+            if int(message.from_user.id) != int("1618502708") and int(message.from_user.id) != int("940369449"):
+                await message.reply(f"{greeting[1]}, {name}!")
+            else:
+                await bot.send_message(message.from_user.id, text=f"{greeting[1]}, {name}! " + random.choice(emojies))
+        elif 16 <= dt.now().hour <= 24:
+            if int(message.from_user.id) != int("1618502708") and int(message.from_user.id) != int("940369449"):
+                await message.reply(f"{greeting[2]}, {name}!")
+            else:
+                await bot.send_message(message.from_user.id, text=f"{greeting[2]}, {name}! " + random.choice(emojies))
+        elif dt.now().hour >= 24 or dt.now().hour <= 4:
+            if int(message.from_user.id) != int("1618502708") and int(message.from_user.id) != int("940369449"):
+                await message.reply(f"{greeting[3]}, {name}!")
+            else:
+                await bot.send_message(message.from_user.id, text=f"{greeting[3]}, {name}! " + random.choice(emojies))
+        # print(fuzz.ratio(message.text, user_greet))
+    elif fuzz.ratio(message.text, 'Настройки') > 65:
+        await bot.send_message(message.from_user.id, text="Данная функция разрабатывается пожоди!")
+    elif message.text.startswith("+7"):
+        mts_codes = ("901", "902", "904", "908", "910", "911", "912", "913", "914", "915", "916", "917", "918", "919", "950", "958", "978", "980", "981", "982", "983", "984", "985", "986", "987", "988", "989")
+
+        parsrnum = parse(message.text)
+        timeZone = timezone.time_zones_for_number(parsrnum)
+        Karri = carrier.name_for_number(parsrnum, 'ru')
+        Region = geocoder.description_for_number(parsrnum, 'ru')
+
+        if '993' in message.text or '995' in message.text:
+            Karri = "Тинькофф Мобайл"
+        elif message.text[2:-7] in mts_codes:
+            Karri = "МТС"
+        # print(message.text[2:-7])
+        await message.reply(f'Страна: <i>{Region}</i>\nОператор: <i>{Karri}</i>', parse_mode="HTML")
+        # \nВременная зона: < i > {timeZone} < / i >\n
+    elif fuzz.partial_ratio(message.text, "кубик") > 65:
+        await message.answer_dice()
+    elif message.text not in all_cmds:
+        wiki = message.text
+        wikipedia.set_lang("ru")
+        title = wikipedia.page(wiki).title
+        page = wikipedia.summary(wiki)
+        await message.reply(f"<strong><i>{title}</i></strong>\n\n{page}", parse_mode='HTML')
+    elif fuzz.ratio(message.text, weather_cmds) > 65:
+        await message.reply("Напиши название города", reply_markup=btn.WeatherMenu)
+    else:
+        await bot.send_message(message.from_user.id, text=random.choice(errors))
+
+@dp.message_handler(content_types=["location"])
+async def location(message):
+    if message.location is not None:
+        global translator
+        # print(message.location)
+        w = r.get(f"https://api.openweathermap.org/data/2.5/weather?lat={message.location.latitude}&lon={message.location.longitude}&appid={config.api_code}")
+
+        req = w.json()
+        # print(req)
+
+        city = req["name"]
+        temp = req["main"]['temp'] 
+        humidity = req["main"]["humidity"]
+        pressure = req["main"]["pressure"]
+        wind = req["wind"]["speed"]
+        result = translator.translate(city, dest='ru').text
+        deletter = types.ReplyKeyboardRemove()
+        await message.reply(
+            f"В городе: {result}\nТемпература: {round(temp-273.15)} C°\nВлажность: {humidity} % \nДавление: {pressure} мм.рт.ст\nВетер: {wind} м/с", reply_markup=deletter)
+
+
+if __name__ == '__main__':
+    executor.start_polling(dp)
