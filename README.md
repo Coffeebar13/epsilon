@@ -1,1 +1,1 @@
-# Epsilon - Python chat-bot
+# Epsilon - Telegram chat-bot
