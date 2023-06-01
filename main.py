@@ -40,26 +40,26 @@ async def start_cmd(message: types.Message):
     name = message.from_user.first_name
     #await bot.send_message(message.from_user.id, "text=message.from_user.id)
     if 4 <= dt.now().hour <= 12:
-        if int(message.from_user.id) != int("1618502708") and int(message.from_user.id) != int("940369449"):
+        if int(message.from_user.id) != int(config.dev_ids):
             await bot.send_message(message.from_user.id, text=f"{greeting[0]}, {name}!")
         else:
             await bot.send_message(message.from_user.id, text=f"{greeting[0]}, {name}! " + random.choice(emojies))
     elif 12 <= dt.now().hour <= 16:
-        if int(message.from_user.id) != int("1618502708") and int(message.from_user.id) != int("940369449"):
+        if int(message.from_user.id) != int(config.dev_ids):
             await bot.send_message(message.from_user.id,text=f"{greeting[1]}, {name}!")
         else:
             await bot.send_message(message.from_user.id, text=f"{greeting[1]}, {name}! " + random.choice(emojies))
     elif 16 <= dt.now().hour <= 24:
-        if int(message.from_user.id) != int("1618502708") and int(message.from_user.id) != int("940369449"):
+        if int(message.from_user.id) != int(config.dev_ids):
             await bot.send_message(message.from_user.id, text=f"{greeting[2]}, {name}!")
         else:
             await bot.send_message(message.from_user.id, text=f"{greeting[2]}, {name}! " + random.choice(emojies))
     elif dt.now().hour >= 24 or dt.now().hour <= 4:
-        if int(message.from_user.id) != int("1618502708") and int(message.from_user.id) != int("940369449"):
+        if int(message.from_user.id) != int(config.dev_ids):
             await bot.send_message(message.from_user.id, text=f"{greeting[3]}, {name}!")
         else:
             await bot.send_message(message.from_user.id, text=f"{greeting[3]}, {name}! " + random.choice(emojies))
-    # if int(message.from_user.id) != int("1618502708") and int(message.from_user.id) != int("940369449"):
+    # if int(message.from_user.id) != int(config.dev_ids[1]):
     #     await bot.send_message(message.from_user.id, "text=f"{greeting[3]}, "{name}!")
     # else:
     #     await bot.send_message(message.from_user.id, "text=f"{greeting[3]}, "{name}!" + random.choice(emojies))
@@ -81,22 +81,22 @@ async def all_textes(message: types.Message):
         await message.answer(f'<i>Project Epsilon (ε)</i>\nВерсия: <i>{version}</i>\nСборка: <i>{build}</i>\nРазработчики: <i>@notCloffer, @DimaEmelianov90</i>', parse_mode="HTML")
     elif fuzz.ratio(message.text, user_greet) > 65:
         if 4 <= dt.now().hour <= 12:
-            if int(message.from_user.id) != int("1618502708") and int(message.from_user.id) != int("940369449"):
+            if int(message.from_user.id) != int(config.dev_ids):
                 await message.reply(f"{greeting[0]}, {name}!")
             else:
                 await bot.send_message(message.from_user.id, text=f"{greeting[0]}, {name}! " + random.choice(emojies))
         elif 12 <= dt.now().hour <= 16:
-            if int(message.from_user.id) != int("1618502708") and int(message.from_user.id) != int("940369449"):
+            if int(message.from_user.id) != int(config.dev_ids):
                 await message.reply(f"{greeting[1]}, {name}!")
             else:
                 await bot.send_message(message.from_user.id, text=f"{greeting[1]}, {name}! " + random.choice(emojies))
         elif 16 <= dt.now().hour <= 24:
-            if int(message.from_user.id) != int("1618502708") and int(message.from_user.id) != int("940369449"):
+            if int(message.from_user.id) != int(config.dev_ids):
                 await message.reply(f"{greeting[2]}, {name}!")
             else:
                 await bot.send_message(message.from_user.id, text=f"{greeting[2]}, {name}! " + random.choice(emojies))
         elif dt.now().hour >= 24 or dt.now().hour <= 4:
-            if int(message.from_user.id) != int("1618502708") and int(message.from_user.id) != int("940369449"):
+            if int(message.from_user.id) != int(config.dev_ids):
                 await message.reply(f"{greeting[3]}, {name}!")
             else:
                 await bot.send_message(message.from_user.id, text=f"{greeting[3]}, {name}! " + random.choice(emojies))
